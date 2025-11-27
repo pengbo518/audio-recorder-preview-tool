@@ -51,6 +51,7 @@
 ## 本地运行
 
 直接打开 `index.html` 文件即可使用（需要在 HTTPS 或 localhost 环境下才能使用录音功能）。
+<img width="1396" height="1069" alt="image" src="https://github.com/user-attachments/assets/272c2c8c-deaf-49e2-93f8-f5a0c2db0107" />
 
 ## 许可证
 
