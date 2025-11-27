@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>模拟APP录音+智能文件预览</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #64748b;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --background: #0f172a;
+      --surface: #1e293b;
+      --surface-light: #334155;
+      --text: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --border: #334155;
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+      --glow: 0 0 15px rgba(37, 99, 235, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.1) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 20%);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      opacity: 0.8;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glow), var(--shadow);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .card-title i {
+      font-size: 1.4rem;
+    }
+
+    /* 录音区样式 */
+    .recorder-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 46px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface-light);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #475569;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .status code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    .tip {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .tip i {
+      margin-right: 0.5rem;
+      color: var(--primary);
+    }
+
+    /* 预览区样式 */
+    .input-area {
+      width: 100%;
+      height: 140px;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: 'Monaco', 'Consolas', monospace;
+      resize: vertical;
+      transition: border-color 0.2s ease;
+    }
+
+    .input-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .preview-container {
+      margin-top: 1.5rem;
+      text-align: center;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-container img {
+      max-width: 100%;
+      max-height: 400px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .preview-container audio {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 12px;
+      background: var(--surface-light);
+    }
+
+    .success {
+      color: var(--success);
+    }
+
+    .error {
+      color: var(--error);
+    }
+
+    .warning {
+      color: var(--warning);
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .recording-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: var(--error);
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      animation: pulse 1.5s infinite;
+    }
+
+    .countdown {
+      display: inline-block;
+      background: var(--warning);
+      color: #000;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+      
+      .recorder-controls {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Audio Recorder & Previewer</h1>
+      <p class="subtitle">智能录音与文件预览系统</p>
+    </header>
+
+    <!-- 录音功能区 -->
+    <section class="card" id="recorderSection">
+      <h2 class="card-title">
+        <i>🎤</i>
+        <span>录音控制台</span>
+      </h2>
+      <div class="recorder-controls">
+        <button class="btn btn-primary" id="startBtn">
+          <i>●</i>
+          开始录音
+        </button>
+        <button class="btn btn-secondary" id="stopBtn" disabled>
+          <i>■</i>
+          结束录音
+        </button>
+        <button class="btn btn-secondary" id="downloadBtn" disabled>
+          <i>💾</i>
+          保存文件
+        </button>
+      </div>
+      <div class="status" id="status">
+        点击"开始录音"授权麦克风访问权限
+      </div>
+      <p class="tip">
+        <i>💡</i>
+        系统将模拟 uniapp 录制音频并 MP3 输出（后端 FFmpeg 统一转码为 16k WAV 用于 ASR）
+      </p>
+    </section>
+
+    <!-- 智能预览区 -->
+    <section class="card" id="previewSection">
+      <h2 class="card-title">
+        <i>🔍</i>
+        <span>智能预览器</span>
+      </h2>
+      <textarea 
+        class="input-area"
+        id="inputArea" 
+        placeholder='支持以下输入格式：
+1. 直接粘贴文件URL（如：https://xxx.mp3?sign=...）
+2. 粘贴完整JSON响应（如：{"code":200, "data": {"fileUrl": "..."}}）'
+      ></textarea>
+      <p class="tip">
+        <i>💡</i>
+        自动识别音频/图片格式，支持COS临时签名链接
+      </p>
+      <div class="preview-container" id="previewContainer">
+        <p style="color: var(--text-secondary); opacity: 0.6;">等待输入文件URL或JSON数据...</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ========== 录音功能 ==========
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioBlob;
+    let countdownInterval;
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const status = document.getElementById('status');
+
+    startBtn.onclick = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true
+          } 
+        });
+
+        // 初始化倒计时
+        let remainingTime = 60;
+        status.innerHTML = `<span class="pulse"><span class="recording-indicator"></span>正在录音...（<span id="countdown">${remainingTime}</span>秒后自动结束）</span>`;
+
+        // 设置倒计时
+        clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+          remainingTime--;
+          
+          // 更新倒计时显示
+          if (remainingTime <= 10) {
+            if (remainingTime <= 5) {
+              status.innerHTML = `<span class="pulse"><span class="recording-indicator"></span>正在录音...（<span class="warning countdown">${remainingTime}</span>秒后自动结束）</span>`;
+            } else {
+              status.innerHTML = `<span class="pulse"><span class="recording-indicator"></span>正在录音...（<span class="countdown">${remainingTime}</span>秒后自动结束）</span>`;
+            }
+          } else {
+            const countdownEl = document.getElementById('countdown');
+            if (countdownEl) {
+              countdownEl.textContent = remainingTime;
+            }
+          }
+          
+          // 当倒计时结束时，停止录音
+          if (remainingTime <= 0) {
+            clearInterval(countdownInterval);
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+              mediaRecorder.stop();
+              startBtn.disabled = false;
+              stopBtn.disabled = true;
+            }
+          }
+        }, 1000);
+
+        const mimeType = 
+          MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+          MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav' :
+          'audio/webm';
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        audioChunks = [];
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          clearInterval(countdownInterval);
+          stream.getTracks().forEach(track => track.stop());
+          const actualType = mediaRecorder.mimeType || mimeType;
+          audioBlob = new Blob(audioChunks, { type: actualType });
+          const sizeKB = (audioBlob.size / 1024).toFixed(1);
+          status.innerHTML = `
+            <span class="success">✅ 录音完成！</span><br>
+            <strong>格式:</strong> <code>${actualType}</code><br>
+            <strong>大小:</strong> ${sizeKB} KB<br>
+            <span class="success">✅ 模拟 uniapp MP3 录音完成</span>
+          `;
+          downloadBtn.disabled = false;
+        };
+
+        mediaRecorder.start();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        // 60秒自动停止 - 这个是备用机制，主要通过倒计时来控制
+        setTimeout(() => {
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+          }
+        }, 60000);
+
+      } catch (err) {
+        console.error('录音失败:', err);
+        status.innerHTML = `
+          <span class="error">❌ 麦克风访问失败</span><br>
+          <strong>请确认：</strong><br>
+          1. 使用 HTTPS 或 localhost<br>
+          2. 已允许麦克风权限<br>
+          3. 浏览器支持 Web Audio API
+        `;
+      }
+    };
+
+    stopBtn.onclick = () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        clearInterval(countdownInterval);
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      }
+    };
+
+    downloadBtn.onclick = () => {
+      if (!audioBlob) return;
+      const url = URL.createObjectURL(audioBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'recording.mp3';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      status.innerHTML += '<br><span class="success">✅ 文件已保存为 recording.mp3</span>';
+    };
+
+    // ========== 智能预览功能 ==========
+    const inputArea = document.getElementById('inputArea');
+    const container = document.getElementById('previewContainer');
+
+    inputArea.addEventListener('input', debounce(handleInput, 500));
+
+    function getFileExtensionFromUrl(url) {
+      try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const lastDotIndex = pathname.lastIndexOf('.');
+        return lastDotIndex === -1 ? '' : pathname.substring(lastDotIndex).toLowerCase();
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function isAudioExt(ext) {
+      return ['.mp3', '.wav', '.webm', '.aac', '.m4a', '.ogg'].includes(ext);
+    }
+
+    function isImageExt(ext) {
+      return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+    }
+
+    function previewFile(url) {
+      container.innerHTML = '';
+      const ext = getFileExtensionFromUrl(url);
+
+      if (isAudioExt(ext)) {
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.style.width = '100%';
+        audio.style.maxWidth = '600px';
+        audio.src = url;
+        audio.onerror = () => {
+          container.innerHTML = '<p class="error">❌ 音频加载失败（URL 可能已过期）</p>';
+        };
+        container.appendChild(audio);
+      } else if (isImageExt(ext)) {
+        const img = document.createElement('img');
+        img.alt = '预览图片';
+        img.src = url;
+        img.style.maxHeight = '400px';
+        img.style.borderRadius = '8px';
+        img.onerror = () => {
+          container.innerHTML = '<p class="error">❌ 图片加载失败（URL 可能已过期）</p>';
+        };
+        container.appendChild(img);
+      } else {
+        container.innerHTML = `<p class="error">⚠️ 无法识别文件类型（扩展名: "${ext || '无'}"）</p>`;
+      }
+    }
+
+    function handleInput() {
+      const text = inputArea.value.trim();
+      container.innerHTML = '';
+
+      if (!text) {
+        container.innerHTML = '<p style="color: var(--text-secondary); opacity: 0.6;">等待输入文件URL或JSON数据...</p>';
+        return;
+      }
+
+      if (text.startsWith('{') && text.endsWith('}')) {
+        try {
+          const json = JSON.parse(text);
+          let fileUrl = json.data?.fileUrl || json.fileUrl;
+          if (fileUrl && typeof fileUrl === 'string') {
+            previewFile(fileUrl);
+            return;
+          } else {
+            container.innerHTML = '<p class="error">❌ JSON 中未找到有效的 fileUrl 字段</p>';
+            return;
+          }
+        } catch (e) {
+          // 继续尝试作为 URL
+        }
+      }
+
+      try {
+        new URL(text);
+        previewFile(text);
+      } catch (e) {
+        container.innerHTML = '<p class="error">❌ 输入内容既不是有效 JSON，也不是合法 URL</p>';
+      }
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+  </script>
+</body>
+</html>
